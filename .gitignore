@@ -1,0 +1,17 @@
+# Root-level ignores for the InsightDash monorepo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Node
+node_modules/
+
+# Logs
+*.log
+npm-debug.log*

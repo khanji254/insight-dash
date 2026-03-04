@@ -1,0 +1,149 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  // Local dev: sqlite  |  Production (Railway): change to "postgresql"
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Auth ────────────────────────────────────────────────────────────────────
+// Role values:   ADMIN | ANALYST | VIEWER
+// Status values: PENDING_EMAIL | PENDING_APPROVAL | ACTIVE | SUSPENDED
+
+model User {
+  id            String         @id @default(uuid())
+  email         String         @unique
+  passwordHash  String
+  name          String
+  role          String         @default("VIEWER")
+  status        String         @default("PENDING_EMAIL")
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  refreshTokens RefreshToken[]
+
+  @@index([email])
+  @@index([status])
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([token])
+  @@index([userId])
+}
+
+// OTP codes used for email verification on sign-up
+model OtpCode {
+  id        String    @id @default(uuid())
+  email     String
+  codeHash  String    // bcrypt hash of the 6-digit code
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([email])
+}
+
+// ─── Domain ──────────────────────────────────────────────────────────────────
+// Entity type values: Company | Individual
+
+model Entity {
+  id              String     @id @default(uuid())
+  name            String
+  type            String     // "Company" | "Individual"
+  riskScore       Int        @default(0)
+  totalDonations  BigInt     @default(0)
+  totalContracts  BigInt     @default(0)
+  matchCount      Int        @default(0)
+  party           String?
+  ministry        String?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  donorLinks      Donor[]
+  tenderLinks     Tender[]
+
+  redFlagsAsA     RedFlag[]  @relation("EntityA")
+  redFlagsAsB     RedFlag[]  @relation("EntityB")
+
+  @@index([riskScore])
+  @@index([name])
+}
+
+model Donor {
+  id            String   @id @default(uuid())
+  name          String
+  amount        BigInt
+  party         String
+  date          DateTime
+  linkedCompany String?
+  entityId      String?
+  entity        Entity?  @relation(fields: [entityId], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([party])
+  @@index([date])
+}
+
+model Tender {
+  id          String   @id @default(uuid())
+  companyName String
+  amount      BigInt
+  ministry    String
+  awardDate   DateTime
+  reference   String   @unique
+  entityId    String?
+  entity      Entity?  @relation(fields: [entityId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([ministry])
+  @@index([awardDate])
+}
+
+model Appointment {
+  id         String   @id @default(uuid())
+  name       String
+  role       String
+  gazetteRef String
+  date       DateTime
+  ministry   String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([ministry])
+  @@index([date])
+}
+
+model RedFlag {
+  id              String   @id @default(uuid())
+  entityAId       String
+  entityBId       String
+  entityA         Entity   @relation("EntityA", fields: [entityAId], references: [id])
+  entityB         Entity   @relation("EntityB", fields: [entityBId], references: [id])
+  matchConfidence Int
+  riskScore       Int
+  donationAmount  BigInt
+  tenderAmount    BigInt
+  donationDate    DateTime
+  awardDate       DateTime
+  ministry        String
+  party           String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([riskScore])
+  @@index([entityAId])
+  @@index([entityBId])
+}
