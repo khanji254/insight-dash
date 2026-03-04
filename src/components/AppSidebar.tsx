@@ -5,6 +5,8 @@ import {
   Info,
   Search,
   Shield,
+  LogOut,
+  User,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -21,6 +23,9 @@ import {
   SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { useAuth } from "@/lib/auth-context";
+import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const navItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
@@ -33,6 +38,7 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
+  const { user, logout } = useAuth();
   const isActive = (path: string) =>
     path === "/" ? location.pathname === "/" : location.pathname.startsWith(path);
 
@@ -83,13 +89,39 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="p-4">
-        {!collapsed && (
-          <div className="flex items-center gap-2 text-[10px] text-sidebar-foreground/40">
-            <Shield className="h-3 w-3" />
-            <span>TI-Kenya Compliant</span>
+      <SidebarFooter className="p-4 space-y-3">
+        {!collapsed && user && (
+          <div className="flex items-center gap-2 rounded-md bg-sidebar-accent/40 px-2 py-1.5">
+            <User className="h-3.5 w-3.5 text-sidebar-foreground/60 shrink-0" />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[11px] font-medium text-sidebar-foreground/80">{user.email}</p>
+              <p className="text-[9px] uppercase tracking-widest text-sidebar-foreground/40">{user.role}</p>
+            </div>
           </div>
         )}
+
+        <div className="flex items-center justify-between">
+          {!collapsed && (
+            <div className="flex items-center gap-2 text-[10px] text-sidebar-foreground/40">
+              <Shield className="h-3 w-3" />
+              <span>TI-Kenya Compliant</span>
+            </div>
+          )}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-sidebar-foreground/50 hover:text-destructive hover:bg-destructive/10"
+                onClick={() => logout()}
+                aria-label="Sign out"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">Sign out</TooltipContent>
+          </Tooltip>
+        </div>
       </SidebarFooter>
     </Sidebar>
   );
